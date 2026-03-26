@@ -7,12 +7,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SafetyCheckin extends Model
 {
-    protected $fillable = ['user_id', 'trusted_contact_id', 'check_in_at', 'status'];
+    protected $fillable = [
+        'user_id',
+        'trusted_contact_id',
+        'meet_description',
+        'location_hint',
+        'expected_end_at',
+        'status',
+    ];
 
     protected function casts(): array
     {
         return [
-            'check_in_at' => 'datetime',
+            'expected_end_at' => 'datetime',
         ];
     }
 

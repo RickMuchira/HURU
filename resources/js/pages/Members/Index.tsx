@@ -4,11 +4,17 @@ import type { PageProps, User } from '@/types';
 
 interface PaginatedMembers {
     data: User[];
-    current_page: number;
-    last_page: number;
-    total: number;
-    next_page_url: string | null;
-    prev_page_url: string | null;
+    links: {
+        first: string | null;
+        last: string | null;
+        prev: string | null;
+        next: string | null;
+    };
+    meta: {
+        current_page: number;
+        last_page: number;
+        total: number;
+    };
 }
 
 interface Props extends PageProps {
@@ -20,17 +26,15 @@ interface Props extends PageProps {
 const INTENTS = [
     { value: 'friendship', label: '👋 Friendship' },
     { value: 'support', label: '💙 Support' },
-    { value: 'dating', label: '💛 Dating' },
     { value: 'community', label: '✊ Community' },
-    { value: 'browsing', label: '👀 Browsing' },
+    { value: 'romance', label: '💛 Romance' },
 ];
 
 const INTENT_COLORS: Record<string, string> = {
     friendship: '#D97706',
     support: '#3B82F6',
-    dating: '#EC4899',
+    romance: '#EC4899',
     community: '#8B5CF6',
-    browsing: '#6B7280',
 };
 
 function MemberCard({ member }: { member: User }) {
@@ -150,7 +154,7 @@ export default function MembersIndex({ members, filters, countries }: Props) {
                             Find your people
                         </h1>
                         <p style={{ color: '#A8A29E', fontSize: '0.9375rem' }}>
-                            {members.total.toLocaleString()} {members.total === 1 ? 'member' : 'members'} worldwide
+                            {members.meta.total.toLocaleString()} {members.meta.total === 1 ? 'member' : 'members'} worldwide
                         </p>
                     </div>
 
@@ -211,18 +215,18 @@ export default function MembersIndex({ members, filters, countries }: Props) {
                     )}
 
                     {/* Pagination */}
-                    {members.last_page > 1 && (
+                    {members.meta.last_page > 1 && (
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '2.5rem' }}>
-                            {members.prev_page_url && (
-                                <Link href={members.prev_page_url} className="huru-btn huru-btn-ghost" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem', minHeight: 'unset', textDecoration: 'none' }}>
+                            {members.links.prev && (
+                                <Link href={members.links.prev} className="huru-btn huru-btn-ghost" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem', minHeight: 'unset', textDecoration: 'none' }}>
                                     ← Previous
                                 </Link>
                             )}
                             <span style={{ padding: '0.5rem 1rem', color: '#A8A29E', fontSize: '0.875rem', display: 'flex', alignItems: 'center' }}>
-                                Page {members.current_page} of {members.last_page}
+                                Page {members.meta.current_page} of {members.meta.last_page}
                             </span>
-                            {members.next_page_url && (
-                                <Link href={members.next_page_url} className="huru-btn huru-btn-ghost" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem', minHeight: 'unset', textDecoration: 'none' }}>
+                            {members.links.next && (
+                                <Link href={members.links.next} className="huru-btn huru-btn-ghost" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem', minHeight: 'unset', textDecoration: 'none' }}>
                                     Next →
                                 </Link>
                             )}

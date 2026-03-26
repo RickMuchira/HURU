@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TrustedContact extends Model
 {
-    protected $fillable = ['user_id', 'name', 'phone'];
+    protected $fillable = ['user_id', 'name', 'safe_channel', 'notes'];
 
     public function user(): BelongsTo
     {

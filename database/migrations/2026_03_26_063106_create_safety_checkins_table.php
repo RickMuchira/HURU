@@ -11,9 +11,11 @@ return new class extends Migration
         Schema::create('safety_checkins', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('trusted_contact_id')->constrained('trusted_contacts')->cascadeOnDelete();
-            $table->timestamp('check_in_at');
-            $table->enum('status', ['active', 'safe', 'alerted'])->default('active')->index();
+            $table->foreignId('trusted_contact_id')->nullable()->constrained('trusted_contacts')->nullOnDelete();
+            $table->string('meet_description');
+            $table->string('location_hint')->nullable();
+            $table->timestamp('expected_end_at');
+            $table->enum('status', ['active', 'safe', 'missed', 'cancelled'])->default('active')->index();
             $table->timestamps();
         });
     }

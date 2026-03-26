@@ -24,8 +24,11 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $name = fake()->name();
+        $username = Str::slug($name).fake()->numerify('##');
+
         return [
-            'name' => fake()->name(),
+            'name' => $name,
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
@@ -33,6 +36,23 @@ class UserFactory extends Factory
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
+            // HURU profile fields
+            'username' => $username,
+            'display_name' => fake()->firstName(),
+            'pronouns' => fake()->randomElement(['he/him', 'she/her', 'they/them', 'any/all']),
+            'bio' => fake()->optional(0.7)->sentence(),
+            'country' => fake()->randomElement(['Kenya', 'Uganda', 'South Africa', 'Nigeria', 'United Kingdom', 'United States', 'Germany', 'Brazil', 'India', 'Canada', 'Australia', 'Ghana', 'Tanzania', 'Rwanda']),
+            'city' => fake()->optional(0.6)->city(),
+            'location_hidden' => fake()->boolean(30),
+            'avatar_path' => null,
+            'profile_visibility' => fake()->randomElement(['public', 'members', 'connections']),
+            'messaging_permission' => fake()->randomElement(['everyone', 'connections', 'no_one']),
+            'show_online' => fake()->boolean(60),
+            'intents' => fake()->randomElements(['friendship', 'support', 'romance', 'community'], fake()->numberBetween(1, 3)),
+            'ghost_mode' => false,
+            'onboarding_completed' => true,
+            'is_suspended' => false,
+            'is_admin' => false,
         ];
     }
 

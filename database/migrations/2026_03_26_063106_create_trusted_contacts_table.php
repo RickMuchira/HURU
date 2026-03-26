@@ -12,7 +12,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('name');
-            $table->string('phone');
+            $table->string('safe_channel'); // how to reach them (Signal, WhatsApp number, email, etc.)
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }

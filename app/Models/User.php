@@ -35,6 +35,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'onboarding_completed',
         'is_suspended',
         'is_admin',
+        'deletion_requested_at',
     ];
 
     protected $hidden = [
@@ -58,6 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'onboarding_completed' => 'boolean',
             'is_suspended' => 'boolean',
             'is_admin' => 'boolean',
+            'deletion_requested_at' => 'datetime',
         ];
     }
 
@@ -74,8 +76,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function conversations(): BelongsToMany
     {
         return $this->belongsToMany(Conversation::class, 'conversation_participants')
-            ->withPivot('joined_at')
-            ->withTimestamps();
+            ->withPivot('joined_at');
     }
 
     public function messages(): HasMany
