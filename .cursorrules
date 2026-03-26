@@ -1,0 +1,413 @@
+You are an expert Laravel 12 + React 19 + Inertia v2 + TypeScript developer.
+
+Build a global, privacy-first community platform called HURU — where 
+LGBTQ+ people worldwide can find each other, connect, message, join 
+spaces, and meet safely without ever exposing their real identity.
+
+Tagline: "Find your people. Find your safe place."
+
+═══════════════════════════════════════════════
+TECH STACK
+═══════════════════════════════════════════════
+Backend:        Laravel 12
+Real-time:      Laravel Reverb (WebSockets)
+Frontend:       React 19 + Inertia v2 + TypeScript
+Styling:        Tailwind CSS v3
+Auth:           Laravel Fortify + Sanctum
+File storage:   Local disk (dev) / S3 (prod)
+                EXIF stripping via intervention/image v3
+                (call removeAllMeta() on every avatar upload)
+Database:       SQLite (dev) / MySQL (prod)
+Message crypto: Encrypt message body using Laravel's built-in
+                encrypt()/decrypt() helpers via a model cast
+
+═══════════════════════════════════════════════
+INERTIA V2 SETUP — important
+═══════════════════════════════════════════════
+Use @inertiajs/react v2 syntax throughout.
+Use the useForm, usePage, router hooks from @inertiajs/react.
+Do NOT mix v1 and v2 patterns.
+TypeScript types go in resources/js/types/index.d.ts.
+
+═══════════════════════════════════════════════
+BRAND / DESIGN SYSTEM
+═══════════════════════════════════════════════
+Primary:        #D97706  (warm amber)
+Accent dark:    #B45309
+Light wash:     #FEF3C7
+Background:     #0C0A09  (near black — dark canvas globally)
+Surface:        #1C1917
+Border:         rgba(255,255,255,0.08)
+Text primary:   #FAFAF8
+Text muted:     #A8A29E
+Trust teal:     #0D9488  (verified / safe badges only)
+
+Display font:   Fraunces (Google Fonts) — headings
+Body font:      Plus Jakarta Sans (Google Fonts) — all UI text
+
+Dark theme is the default and only theme.
+
+═══════════════════════════════════════════════
+DATABASE MIGRATIONS
+═══════════════════════════════════════════════
+
+Extend the default Laravel users table with:
+  username              string unique
+  display_name          string nullable
+  pronouns              string nullable
+  bio                   string(160) nullable
+  country               string nullable
+  city                  string nullable
+  location_hidden       boolean default false
+  avatar_path           string nullable
+  profile_visibility    enum: public/members/connections default members
+  messaging_permission  enum: everyone/connections/no_one default connections
+  show_online           boolean default false
+  intents               json nullable
+  ghost_mode            boolean default false
+  onboarding_completed  boolean default false
+  is_suspended          boolean default false
+
+Create these additional tables:
+
+connections
+  id, requester_id (FK users), receiver_id (FK users)
+  status: enum pending/accepted/declined/blocked
+  timestamps
+
+conversations
+  id, timestamps
+
+conversation_participants (pivot)
+  conversation_id, user_id, joined_at
+
+messages
+  id, conversation_id (FK), sender_id (FK users)
+  body text (encrypted via Laravel cast)
+  read_at nullable timestamp
+  auto_delete_at nullable timestamp
+  timestamps
+
+spaces
+  id, name, slug unique, description text nullable
+  type: enum public/private default public
+  creator_id (FK users)
+  avatar_path nullable
+  timestamps
+
+space_members (pivot)
+  space_id, user_id
+  role: enum member/moderator default member
+  joined_at
+
+space_posts
+  id, space_id (FK), user_id (FK)
+  body text
+  timestamps
+
+reports
+  id, reporter_id (FK users), reported_user_id (FK users)
+  reason string, description text nullable
+  status: enum pending/reviewed/resolved default pending
+  timestamps
+
+trusted_contacts
+  id, user_id (FK)
+  name string, phone string
+  timestamps
+
+safety_checkins
+  id, user_id (FK), trusted_contact_id (FK)
+  check_in_at timestamp
+  status: enum active/safe/alerted default active
+  timestamps
+
+═══════════════════════════════════════════════
+ROUTES & PAGES
+═══════════════════════════════════════════════
+
+PUBLIC (guest middleware):
+  GET /              → Pages/Landing.tsx
+  GET /join          → Pages/Auth/Register.tsx
+  GET /login         → Pages/Auth/Login.tsx
+
+AUTHENTICATED (auth middleware):
+  GET /onboarding    → Pages/Onboarding/Index.tsx (4-step, forced)
+  GET /home          → Pages/Home.tsx
+  GET /members       → Pages/Members/Index.tsx
+  GET /members/:username → Pages/Members/Show.tsx
+  GET /connections   → Pages/Connections.tsx
+  GET /messages      → Pages/Messages/Index.tsx
+  GET /messages/:username → Pages/Messages/Show.tsx
+  GET /spaces        → Pages/Spaces/Index.tsx
+  GET /spaces/create → Pages/Spaces/Create.tsx
+  GET /spaces/:slug  → Pages/Spaces/Show.tsx
+  GET /profile       → Pages/Profile/Index.tsx
+  GET /settings/profile  → Pages/Settings/Profile.tsx
+  GET /settings/privacy  → Pages/Settings/Privacy.tsx
+  GET /settings/safety   → Pages/Settings/Safety.tsx
+
+ADMIN:
+  GET  /admin/login      → Pages/Admin/Login.tsx
+  GET  /admin/dashboard  → Pages/Admin/Dashboard.tsx
+  GET  /admin/users      → Pages/Admin/Users.tsx
+  GET  /admin/reports    → Pages/Admin/Reports.tsx
+  GET  /admin/spaces     → Pages/Admin/Spaces.tsx
+
+═══════════════════════════════════════════════
+API ROUTES
+═══════════════════════════════════════════════
+POST   /api/auth/register
+POST   /api/auth/login
+POST   /api/auth/logout
+POST   /api/auth/email/verify
+GET    /api/me
+PUT    /api/me/profile
+PUT    /api/me/privacy
+PUT    /api/me/intents
+PUT    /api/me/ghost-mode
+
+GET    /api/members        ?country= &intent= &search=
+GET    /api/members/:username
+
+POST   /api/connections
+PUT    /api/connections/:id
+GET    /api/connections
+
+GET    /api/conversations
+GET    /api/conversations/:id/messages
+POST   /api/conversations/:id/messages
+DELETE /api/messages/:id
+
+GET    /api/spaces
+POST   /api/spaces
+GET    /api/spaces/:slug
+POST   /api/spaces/:slug/join
+GET    /api/spaces/:slug/posts
+POST   /api/spaces/:slug/posts
+
+POST   /api/reports
+
+GET    /api/safety/trusted-contacts
+POST   /api/safety/trusted-contacts
+POST   /api/safety/checkins
+PUT    /api/safety/checkins/:id
+
+═══════════════════════════════════════════════
+LANDING PAGE — Awwwards-level design spec
+═══════════════════════════════════════════════
+This is the most important page. It must feel like entering
+a place, not buying a product. Use the following structure:
+
+NAVBAR
+  - Logo: "HURU" in Fraunces italic, amber color
+  - Links: About · Spaces · Safety
+  - Right: "Join" button (amber outlined) + "Login" (ghost)
+  - Sticky, dark bg, 1px bottom border rgba(255,255,255,0.06)
+
+HERO SECTION
+  - Full viewport height
+  - Background: #0C0A09 with a radial amber glow behind the 
+    headline (rgba(217,119,6,0.12) circle, 800px, centered)
+  - Large editorial headline in Fraunces italic:
+    "You deserve
+     a safe place
+     to just be."
+  - Each line animates in with staggered fade+translateY on load
+    (CSS only, animation-delay: 0s / 0.15s / 0.3s)
+  - Subheadline in Plus Jakarta Sans 300:
+    "HURU connects LGBTQ+ people worldwide — 
+     privately, safely, without compromise."
+  - Two CTAs side by side:
+    Primary: "Create your profile" → /join (amber bg)
+    Secondary: "See how it works" → smooth scroll to #how
+  - Below CTAs: small text in muted color:
+    "No real name required. No data sold. Ever."
+  - Floating member count badge bottom-right of hero:
+    pulsing green dot + "2,400+ members worldwide"
+    (hardcoded for now, replace with live count later)
+
+HOW IT WORKS SECTION (#how)
+  - 3 columns, icon + heading + short paragraph each
+  - Column 1: "Stay anonymous" — username only, no real name needed
+  - Column 2: "Find your people" — filter by intent, country, vibe
+  - Column 3: "Stay safe" — ghost mode, check-in timer, trusted contacts
+
+SPACES PREVIEW SECTION
+  - Section heading: "Join spaces built for you"
+  - Horizontal scroll row of 4–5 space cards (hardcoded examples):
+    Mental Health · Coming Out · Nairobi Meetups · Trans Support · Book Club
+  - Each card: dark surface, space name, member count, join button
+  - Faint amber glow on hover
+
+SAFETY PROMISE SECTION
+  - Dark teal background (#0D2D2A)
+  - Heading: "Safety is not a feature. It's the foundation."
+  - 3 trust badges: No real names · Messages encrypted · Ghost mode
+  - Short paragraph about the mission
+
+SUPPORT SECTION (Buy Me a Coffee)
+  - Heading: "Built by one developer. Powered by community."
+  - Paragraph: "HURU is free, ad-free, and built in Nairobi for
+    the world. Your support keeps it running and independent."
+  - Button: "☕ Buy us a coffee" → https://buymeacoffee.com/huruapp
+  - Secondary line: "M-Pesa and card accepted"
+
+FOOTER
+  - Logo + tagline
+  - Links: Privacy · Safety · Contact · GitHub
+  - "Built in Nairobi 🇰🇪 for the world"
+  - Small BMaC link in footer too
+
+═══════════════════════════════════════════════
+ONBOARDING — 4-step forced flow
+═══════════════════════════════════════════════
+Redirect to /onboarding after register if onboarding_completed = false.
+Block all other auth routes until complete.
+
+Step 1 — Your identity
+  Username (validated unique), display name (optional), pronouns
+
+Step 2 — About you
+  Bio (160 char limit with counter), country, city (optional),
+  hide location toggle
+
+Step 3 — Your intentions
+  Multi-select pill buttons (not checkboxes):
+  Friendship · Support · Dating · Community · Just browsing
+
+Step 4 — Stay safe
+  Brief explanation of ghost mode and check-in timer
+  Toggle: enable ghost mode by default?
+  "Finish setup" button → sets onboarding_completed = true
+  → redirects to /home
+
+Design: dark full-screen, progress dots at top, 
+step slides in from right, back/next navigation,
+amber CTA buttons.
+
+═══════════════════════════════════════════════
+MEMBER DISCOVERY (/members)
+═══════════════════════════════════════════════
+- Grid of member cards (respect profile_visibility)
+- Each card: avatar (or default initial avatar), username,
+  pronouns, country, intent pills, Connect button
+- Filters sidebar: country, intent, online only
+- ghost_mode = true → user does NOT appear in this list
+- is_suspended = true → user does NOT appear
+
+═══════════════════════════════════════════════
+MESSAGING
+═══════════════════════════════════════════════
+- Real-time via Laravel Reverb
+- Encrypted body (decrypt on read, never store plain)
+- Auto-delete: user can set a message expiry 
+  (1 hour / 24 hours / 7 days / never)
+- A scheduled job (every 5 minutes) deletes 
+  messages where auto_delete_at < now()
+- Read receipts (read_at timestamp)
+- No message editing — delete only
+
+═══════════════════════════════════════════════
+SAFETY CENTER (/settings/safety)
+═══════════════════════════════════════════════
+Ghost mode toggle
+  → When on: remove from member discovery, 
+    hide online status, profile shows 
+    "This profile is private" to non-connections
+
+Trusted contacts
+  → Add up to 3 contacts (name + phone)
+  → These receive an SMS (via Africa's Talking API 
+    or Twilio) if a check-in is missed
+
+Check-in timer
+  → User sets a time (e.g. "Check in within 2 hours")
+  → A countdown is shown on their dashboard
+  → If they don't tap "I'm safe" before it expires,
+    trusted contacts are alerted
+  → Implement with a Laravel scheduled job
+
+Delete account
+  → Soft delete: anonymize all data, 
+    set username to [deleted], null all PII fields
+  → Hard delete option: fully wipe after 30-day grace period
+
+═══════════════════════════════════════════════
+ADMIN PANEL
+═══════════════════════════════════════════════
+Simple, functional. No need for elaborate design.
+Protected by separate admin middleware.
+
+Dashboard: total users, active today, pending reports, spaces count
+Users: paginated table, search, suspend/unsuspend toggle
+Reports: list by status, view details, mark reviewed/resolved
+Spaces: list, delete, feature toggle
+
+Seed one admin: email=admin@huru.app password=Admin1234!
+Add warning in README to change before production.
+
+═══════════════════════════════════════════════
+PRIVACY & SECURITY RULES
+═══════════════════════════════════════════════
+- Email is never shown to other users — ever
+- Username is the only public identity
+- Sanctum tokens stored in memory only (not localStorage)
+- All avatar uploads: strip EXIF via intervention/image v3
+- Messages encrypted at rest with Laravel encrypt() cast
+- ghost_mode users excluded from all discovery endpoints
+- Suspended users excluded from all public endpoints
+- Admin panel on /admin — note in README to change pre-launch
+- Rate limit: POST /api/messages → 60/minute per user
+
+═══════════════════════════════════════════════
+BUILD ORDER — follow this exactly
+═══════════════════════════════════════════════
+Phase 1 (start here):
+  1. Wipe old resource-directory migrations, models, controllers,
+     seeders, and pages — keep auth scaffold, Inertia config, 
+     Tailwind config, folder structure
+  2. New migrations in the order listed above
+  3. User model with casts (intents → array, body → encrypted)
+  4. Fortify + Sanctum auth (register, login, logout, email verify)
+  5. Onboarding flow (4 steps, forced redirect)
+  6. Profile page + settings pages (profile, privacy)
+  7. Landing page (full Awwwards spec above)
+
+Phase 2:
+  8. Member discovery + profile view
+  9. Connection requests (send, accept, decline, block)
+  10. Block list enforcement across all queries
+
+Phase 3:
+  11. Reverb WebSocket setup
+  12. Conversations + messages (create thread, send, receive live)
+  13. Auto-delete job
+  14. Read receipts
+
+Phase 4:
+  15. Spaces (create, browse, join, post)
+  16. Space moderation (moderator role)
+
+Phase 5:
+  17. Safety center (ghost mode enforcement, trusted contacts)
+  18. Check-in timer + scheduled alert job
+  19. Account deletion (soft + hard)
+
+Phase 6:
+  20. Admin panel (all sections)
+  21. Reports system
+
+═══════════════════════════════════════════════
+README must include:
+═══════════════════════════════════════════════
+- Mission statement
+- Full local setup (composer install, npm install, 
+  migrate, seed, reverb:start, queue:work, vite)
+- All required .env variables:
+  APP_URL, DB_*, REVERB_*, 
+  FILESYSTEM_DISK, AWS_* (if S3),
+  AFRICASTALKING_* or TWILIO_* (safety alerts)
+- Admin credentials with change-before-launch warning
+- Buy Me a Coffee link: https://buymeacoffee.com/huruapp
+- Phase roadmap so contributors know what's planned
