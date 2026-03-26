@@ -10,6 +10,7 @@ RUN apk add --no-cache \
     unzip \
     git \
     supervisor \
+    gettext \
     postgresql-dev \
     libpng-dev \
     libjpeg-turbo-dev \
@@ -64,7 +65,7 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
 # Copy nginx config
-COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/nginx.conf.template /etc/nginx/nginx.conf.template
 
 # Copy supervisor config
 COPY docker/supervisord.conf /etc/supervisord.conf
